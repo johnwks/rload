@@ -2,13 +2,12 @@
 
 # pylint: disable=missing-docstring, locally-disabled, invalid-name, line-too-long, anomalous-backslash-in-string, too-many-return-statements, no-member, too-many-locals, too-many-branches, too-many-statements
 
-#import os
+import os
 import sys
 import getopt
 import ConfigParser
 import sqlite3
-#import re
-#import logging
+import logging
 
 from jnpr.junos import Device
 from jnpr.junos.utils.config import Config
@@ -33,6 +32,11 @@ def main():
     except getopt.GetoptError:
         usage()
 
+    cfgfile = None
+    loadfile = None
+    comment = None
+    noprompt = 0
+
     for opt, arg in opts:
         if opt == '-i':
             cfgfile = arg
@@ -45,10 +49,7 @@ def main():
         else:
             usage()
 
-    if ('cfgfile' not in locals()) and ('cfgfile' not in globals()):
-        usage()
-
-    if ('loadfile' not in locals()) and ('loadfile' not in globals()):
+    if ((cfgfile is None) or (loadfile is None)):
         usage()
 
     host = args[0]
@@ -78,8 +79,6 @@ def main():
     else:
         host = rows1[0]
         ip = rows1[1]
-#        dtype = rows1[2]
-#        conn = rows1[3]
         proxy = rows1[4]
         authid = rows1[5]
     db.close()
@@ -90,14 +89,12 @@ def main():
 
     if proxy != 0:
         proxysection = 'Proxy' + str(proxy)
-#        pserver = config.get(proxysection, 'server')
-#        pport = config.get(proxysection, 'port')
         sshconfig = config.get(proxysection, 'sshconfig')
 
-#    devnull = open(os.devnull, 'w')
-#    sys.stderr = devnull
+    devnull = open(os.devnull, 'w')
+    sys.stderr = devnull
 
-#    logging.raiseExceptions = False
+    logging.raiseExceptions = False
 
     dev = Device(ip, user=user, password=passwd, ssh_config=sshconfig, gather_facts=False)
     try:
@@ -116,26 +113,25 @@ def main():
         return
 
     print 'Connected to device %s' %(host)
-    dev.bind(cu=Config)
+#    dev.bind(cu=Config)
 
-    # Lock the configuration, load configuration changes, and commit
     print "Locking the configuration"
-    try:
-        dev.cu.lock()
-    except LockError:
-        print "ERROR: Unable to lock configuration"
-        dev.close()
-        return
+#    try:
+#        dev.cu.lock()
+#    except LockError:
+#        print "ERROR: Unable to lock configuration"
+#        dev.close()
+#        return
 
     print "Loading configuration changes"
-    try:
-        dev.cu.load(path=loadfile, merge=True)
-    except IOError:
-        print "ERROR: Unable to open configuration file"
-        return
+#    try:
+#        dev.cu.load(path=loadfile, merge=True)
+#    except IOError:
+#        print "ERROR: Unable to open configuration file"
+#        return
 
     print "Candidate configuration:"
-    dev.cu.pdiff()
+#    dev.cu.pdiff()
 
     if noprompt == 1:
         commit_confirm = "Y"
@@ -144,26 +140,25 @@ def main():
 
     if commit_confirm in ["y", "Y"]:
         print "Committing the configuration"
-        try:
-            dev.cu.commit(comment=comment)
-        except CommitError:
-            print "ERROR: Unable to commit configuration"
-            print "Unlocking the configuration"
-            try:
-                dev.cu.unlock()
-            except UnlockError:
-                print "ERROR: Unable to unlock configuration"
-            dev.close()
-            return
+#        try:
+#            dev.cu.commit(comment=comment)
+#        except CommitError:
+#            print "ERROR: Unable to commit configuration"
+#            print "Unlocking the configuration"
+#            try:
+#                dev.cu.unlock()
+#            except UnlockError:
+#                print "ERROR: Unable to unlock configuration"
+#            dev.close()
+#            return
         print "Unlocking the configuration"
-        try:
-            dev.cu.unlock()
-        except UnlockError:
-            print "ERROR: Unable to unlock configuration"
+#        try:
+#            dev.cu.unlock()
+#        except UnlockError:
+#            print "ERROR: Unable to unlock configuration"
     else:
         print "Not committing the changes"
 
-    # End the NETCONF session and close the connection
     dev.close()
 
 if __name__ == "__main__":
