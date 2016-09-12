@@ -113,25 +113,25 @@ def main():
         return
 
     print 'Connected to device %s' %(host)
-#    dev.bind(cu=Config)
+    dev.bind(cu=Config)
 
     print "Locking the configuration"
-#    try:
-#        dev.cu.lock()
-#    except LockError:
-#        print "ERROR: Unable to lock configuration"
-#        dev.close()
-#        return
+    try:
+        dev.cu.lock()
+    except LockError:
+        print "ERROR: Unable to lock configuration"
+        dev.close()
+        return
 
     print "Loading configuration changes"
-#    try:
-#        dev.cu.load(path=loadfile, merge=True)
-#    except IOError:
-#        print "ERROR: Unable to open configuration file"
-#        return
+    try:
+        dev.cu.load(path=loadfile, merge=True)
+    except IOError:
+        print "ERROR: Unable to open configuration file"
+        return
 
     print "Candidate configuration:"
-#    dev.cu.pdiff()
+    dev.cu.pdiff()
 
     if noprompt == 1:
         commit_confirm = "Y"
@@ -140,22 +140,22 @@ def main():
 
     if commit_confirm in ["y", "Y"]:
         print "Committing the configuration"
-#        try:
-#            dev.cu.commit(comment=comment)
-#        except CommitError:
-#            print "ERROR: Unable to commit configuration"
-#            print "Unlocking the configuration"
-#            try:
-#                dev.cu.unlock()
-#            except UnlockError:
-#                print "ERROR: Unable to unlock configuration"
-#            dev.close()
-#            return
+        try:
+            dev.cu.commit(comment=comment)
+        except CommitError:
+            print "ERROR: Unable to commit configuration"
+            print "Unlocking the configuration"
+            try:
+                dev.cu.unlock()
+            except UnlockError:
+                print "ERROR: Unable to unlock configuration"
+            dev.close()
+            return
         print "Unlocking the configuration"
-#        try:
-#            dev.cu.unlock()
-#        except UnlockError:
-#            print "ERROR: Unable to unlock configuration"
+        try:
+            dev.cu.unlock()
+        except UnlockError:
+            print "ERROR: Unable to unlock configuration"
     else:
         print "Not committing the changes"
 
