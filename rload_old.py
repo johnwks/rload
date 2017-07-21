@@ -1,13 +1,15 @@
 #!/usr/bin/env python
 
-# pylint: disable=missing-docstring, locally-disabled, invalid-name, line-too-long, anomalous-backslash-in-string, too-many-arguments, too-many-locals, too-many-branches, too-many-statements
+# pylint: disable=missing-docstring, locally-disabled, invalid-name, line-too-long, anomalous-backslash-in-string, too-many-return-statements, no-member, too-many-locals, too-many-branches, too-many-statements
 
 import os
 import sys
 import getopt
+import ConfigParser
+import sqlite3
 import logging
-from rcmdclass import Device, RcmdError
-from jnpr.junos import Device as jnprDevice
+
+from jnpr.junos import Device
 from jnpr.junos.utils.config import Config
 from jnpr.junos.exception import ConnectAuthError, ConnectRefusedError, ConnectTimeoutError, ConnectError, LockError, UnlockError, CommitError
 
@@ -24,8 +26,6 @@ def usage():
 
 
 def main():
-    reload(sys)
-    sys.setdefaultencoding('utf-8')
 
     try:
         opts, args = getopt.getopt(sys.argv[1:], 'i:c:m:y')
@@ -49,37 +49,68 @@ def main():
         else:
             usage()
 
-    if (cfgfile is None) or (loadfile is None):
+    if ((cfgfile is None) or (loadfile is None)):
         usage()
 
     host = args[0]
 
     try:
-        dev1 = Device(cfgfile=cfgfile, host=host)
-    except RcmdError as e:
-        print e.value
-        sys.exit(1)
+        cf = open(cfgfile, 'r')
+    except IOError:
+        print 'ERROR: Unable to open CFG file'
+        return
+    cf.close()
+
+    config = ConfigParser.ConfigParser()
+    config.read(cfgfile)
+
+    SQLDB = config.get('DevicesDB', 'path')
+    if SQLDB is None:
+        print 'ERROR: Unable to get DB file from CFG file'
+        return
+
+    db = sqlite3.connect(SQLDB)
+    cursor = db.cursor()
+    cursor.execute('''SELECT * FROM Devices WHERE Hostname = ? COLLATE NOCASE LIMIT 1''', (host,))
+    rows1 = cursor.fetchone()
+    if rows1 is None:
+        print 'ERROR: Device does not exist in DB'
+        return
+    else:
+        host = rows1[0]
+        ip = rows1[1]
+        proxy = rows1[4]
+        authid = rows1[5]
+    db.close()
+
+    authsection = 'Auth' + str(authid)
+    user = config.get(authsection, 'username')
+    passwd = config.get(authsection, 'password')
+
+    if proxy != 0:
+        proxysection = 'Proxy' + str(proxy)
+        sshconfig = config.get(proxysection, 'sshconfig')
 
     devnull = open(os.devnull, 'w')
     sys.stderr = devnull
 
     logging.raiseExceptions = False
 
-    dev = jnprDevice(dev1.ip, user=dev1.username, password=dev1.password, ssh_config=dev1.sshconfig, gather_facts=False)
+    dev = Device(ip, user=user, password=passwd, ssh_config=sshconfig, gather_facts=False)
     try:
         dev.open()
     except ConnectAuthError:
         print 'ERROR: Authentication failed.'
-        sys.exit(1)
+        return
     except ConnectRefusedError:
         print 'ERROR: Connection refused.'
-        sys.exit(1)
+        return
     except ConnectTimeoutError:
         print 'ERROR: Connection timed out.'
-        sys.exit(1)
+        return
     except ConnectError:
         print 'ERROR: Connection failed.'
-        sys.exit(1)
+        return
 
     print 'Connected to device %s' %(host)
     dev.bind(cu=Config)
@@ -90,14 +121,14 @@ def main():
     except LockError:
         print "ERROR: Unable to lock configuration"
         dev.close()
-        sys.exit(1)
+        return
 
     print "Loading configuration changes"
     try:
         dev.cu.load(path=loadfile, merge=True)
     except IOError:
         print "ERROR: Unable to open configuration file"
-        sys.exit(1)
+        return
 
     print "Candidate configuration:"
     dev.cu.pdiff()
@@ -119,7 +150,7 @@ def main():
             except UnlockError:
                 print "ERROR: Unable to unlock configuration"
             dev.close()
-            sys.exit(1)
+            return
         print "Unlocking the configuration"
         try:
             dev.cu.unlock()
@@ -130,5 +161,5 @@ def main():
 
     dev.close()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
