@@ -94,7 +94,7 @@ def main():
 
     print "Loading configuration changes"
     try:
-        dev.cu.load(path=loadfile, merge=True)
+        dev.cu.load(path=loadfile, merge=True, ignore_warning=True)
     except IOError:
         print "ERROR: Unable to open configuration file"
         sys.exit(1)
