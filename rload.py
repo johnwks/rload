@@ -107,7 +107,7 @@ def main():
     sys.stderr = devnull
     logging.raiseExceptions = False
 
-    dev = jnprDevice(dev1.ip, user=dev1.username, password=dev1.password, ssh_config=dev1.sshconfig, gather_facts=False)
+    dev = jnprDevice(dev1.ip, user=dev1.username, password=dev1.password, port=22, ssh_config=dev1.sshconfig, gather_facts=False)
     try:
         dev.open()
     except ConnectAuthError:
