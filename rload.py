@@ -82,7 +82,7 @@ def main():
         print('ERROR: Connection failed.')
         sys.exit(1)
 
-    print(f'Connected to device {host} ({config_mode} mode - {load_option})')
+    print(f'Connected to device {host} (config mode: {config_mode}, load option: {load_option})')
 
     cu = Config(dev, mode=config_mode)
 
